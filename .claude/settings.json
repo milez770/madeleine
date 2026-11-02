@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "echo \"Current time: $(date '+%Y-%m-%d %H:%M %Z')\"" },
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/99_Scripts/recall_ppr.py\" hook" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/99_Scripts/link_memory.sh\"" },
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/99_Scripts/session_to_thread.py\" --auto --quiet --exclude-session \"$CLAUDE_SESSION_ID\"" }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/99_Scripts/session_to_thread.py\" --session \"$CLAUDE_SESSION_ID\" --quiet" }
+        ]
+      }
+    ]
+  }
+}

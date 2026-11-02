@@ -1,0 +1,20 @@
+# Obsidian
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/plugins/
+.trash/
+
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Full-text recall cache (per machine; recall_ppr.py rebuilds it)
+20_Wiki/.recall_fulltext_cache.pkl
+
+# Unlocked view of the sensitive store (plaintext; never commit; vault_lock.py manages it)
+90_Vaulted/open/

@@ -1,0 +1,1 @@
+- [Episodes](episodes.md) — events in which the user actually thought or decided something, quoted verbatim. No interpretation or rules; the reading session decides what to take from them
