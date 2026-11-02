@@ -9,6 +9,14 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/99_Scripts/recall_ppr.py\" stopcheck" }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "",

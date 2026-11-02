@@ -5,7 +5,7 @@ Four checks:
 1. MEMORY.md index — every mind note is in the index, and the index points to no missing file
 2. Orphan summary — a summary with no line in recall.md or recall_cold.md
 3. Thread-hub dead link — a hub in threads/ points to a summary that does not exist
-4. Unlisted top level — a top-level folder or root file not in the folder list of CLAUDE.md
+4. Unlisted top level — a top-level folder or root file not in the folder list of AGENTS.md
 
 Prints the list and exits 1 on violations, otherwise prints one OK line. No auto-fix — the session fixes.
 """
@@ -23,7 +23,7 @@ ALLOWED_TOP = {
     "00_Inbox", "20_Wiki", "30_Drafts", "40_Published",
     "90_Vaulted", "99_Config", "99_Scripts", "99_Style", "99_Templates",
 }
-ALLOWED_ROOT_FILES = {"CLAUDE.md", "README.md", "README.ko.md", "LICENSE", ".gitignore"}
+ALLOWED_ROOT_FILES = {"AGENTS.md", "README.md", "README.ko.md", "LICENSE", ".gitignore"}
 
 problems = []
 
@@ -53,9 +53,10 @@ for p in sorted(ROOT.iterdir()):
     if p.name.startswith("."):
         continue
     if p.is_dir() and p.name not in ALLOWED_TOP:
-        problems.append(f"unlisted folder: {p.name}/ — list it in CLAUDE.md or remove it")
+        problems.append(f"unlisted folder: {p.name}/ — list it in AGENTS.md or remove it")
     if p.is_file() and p.name not in ALLOWED_ROOT_FILES:
-        problems.append(f"stray root file: {p.name}")
+        hint = " — Claude Code ignores AGENTS.md while it exists" if p.name == "CLAUDE.md" else ""
+        problems.append(f"stray root file: {p.name}{hint}")
 
 if problems:
     print(f"LINT: {len(problems)} violation(s)")

@@ -25,11 +25,12 @@ Filtering policy:
     - Skip headless `claude -p` sessions entirely (no file-history-snapshot marker).
       These are typically auto-summary sessions spawned by SessionEnd hooks and
       would otherwise shadow the real interactive jsonl.
-    - Codex: only session_meta.source == "cli" (TUI). `codex exec` and subagent
-      sessions are skipped. Developer messages (skill lists, hook output) and the
+    - Codex: only sessions whose session_meta.source is "cli" or "vscode" (TUI).
+      `codex exec` and subagent sessions are skipped. Developer messages (skill lists, hook output) and the
       user-role wrappers Codex inserts (<environment_context> etc.) are dropped.
     - Drop tool_use, tool_result, thinking blocks
-    - Drop user messages that are pure meta (system-reminder, slash command tags)
+    - Drop user messages that are pure meta (system-reminder, slash command tags,
+      isMeta entries, harness text such as compaction summaries; see is_injected)
     - Strip embedded meta tags inside user prose
     - Compress code fences > 5 lines to "<code: N lines elided>"
 
@@ -73,7 +74,7 @@ CODEX_WRAPPER_TAGS = {
     "recommended_plugins",
 }
 _LEAD_TAG_RE = re.compile(r"^\s*<([A-Za-z_][\w.-]*)[\s>/]")
-# Codex inserts project instructions (AGENTS.md or fallback CLAUDE.md) as a user-role message
+# Codex inserts project instructions (AGENTS.md) as a user-role message
 _CODEX_PROJECT_DOC_RE = re.compile(r"^\s*# AGENTS\.md instructions for ")
 
 META_TAG_PATTERNS = [
@@ -85,7 +86,31 @@ META_TAG_PATTERNS = [
     re.compile(r"<local-command-stdout>.*?</local-command-stdout>", re.DOTALL),
     re.compile(r"<local-command-stderr>.*?</local-command-stderr>", re.DOTALL),
     re.compile(r"<user-prompt-submit-hook>.*?</user-prompt-submit-hook>", re.DOTALL),
+    re.compile(r"<task-notification>.*?</task-notification>", re.DOTALL),
 ]
+
+# The one definition of harness text that sits in the user's place but was not typed
+# by the user. recall_ppr.py imports it. A leading tag block ('<') is checked
+# separately: capture strips tags with META_TAG_PATTERNS, while readers
+# (recall_ppr.py) treat any text starting with '<' as injected.
+INJECTED_PREFIXES = (
+    "This session is being continued",   # compaction summary
+    "Another Claude session sent",       # subagent report
+    "[Image: original",                  # image attachment notice
+    "Stop hook feedback:",
+    "A session-scoped Stop hook is now active",
+    "# Autonomous loop",
+)
+INJECTED_LEAD_TAG = "<"
+_SLASH_ONLY_RE = re.compile(r"^/[a-z][\w:-]*\s*$")
+
+
+def is_injected(text: str, tag: bool = True) -> bool:
+    """Did the harness put this text in the user's place? With tag=False a leading '<' is not checked."""
+    t = text.lstrip()
+    if tag and t.startswith(INJECTED_LEAD_TAG):
+        return True
+    return t.startswith(INJECTED_PREFIXES) or bool(_SLASH_ONLY_RE.match(t))
 
 
 def slugify(text: str, max_len: int = 40) -> str:
@@ -201,6 +226,8 @@ def extract_user_text(content) -> str:
         # Internal instruction turns marked capture:skip — not part of the conversation
         return ""
     cleaned = strip_meta_tags(content)
+    if is_injected(cleaned, tag=False):
+        return ""
     return cleaned.strip()
 
 
@@ -263,6 +290,8 @@ def parse_transcript(jsonl_path: Path) -> dict:
             content = msg.get("content")
 
             if role == "user":
+                if d.get("isMeta"):
+                    continue
                 text = extract_user_text(content)
                 if text:
                     turns.append(("user", text))
@@ -328,7 +357,9 @@ def is_codex_vault_session(meta: dict) -> bool:
 
 
 def is_codex_interactive(meta: dict) -> bool:
-    return meta.get("source") == "cli"
+    # The source of a terminal TUI session is "cli" or "vscode", depending on the Codex
+    # version. exec sessions are "exec" and subagent sessions carry a dict, so both are skipped
+    return meta.get("source") in ("cli", "vscode")
 
 
 def _codex_text(content, kind: str) -> str:

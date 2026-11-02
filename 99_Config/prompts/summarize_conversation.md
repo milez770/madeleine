@@ -37,7 +37,7 @@ The format is `- YYYY-MM-DD [[summary file name|title]] — hook · hook`. Hooks
 
 When looking for links, read both `recall.md` and `recall_cold.md`. If you link a conversation from the cold file, move its line to `recall.md` unchanged. If you recovered a conversation by searching the raw text, add the search words that found it to its line.
 
-During a conversation, the `recall_ppr.py` hook injects candidates. Do not read the whole ledger every session. If you actually read a candidate's summary, follow the `learn` step in CLAUDE.md.
+During a conversation, the `recall_ppr.py` hook injects candidates. Do not read the whole ledger every session. If you actually read a candidate's summary, follow the `learn` step in AGENTS.md.
 
 ## Finish
 

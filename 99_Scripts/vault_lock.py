@@ -42,6 +42,7 @@ RECALL_VAULTED = os.path.join('20_Wiki', 'recall_vaulted.md')   # relative path 
 VAULTED_IDS = os.path.join(VAULT, '90_Vaulted', 'vaulted_session_ids.txt')
 SEAL_LIVE_GUARD = 600   # transcripts modified within this many seconds are not sealed (live session)
 FT_CACHE = os.path.join(VAULT, '20_Wiki', '.recall_fulltext_cache.pkl')
+RAW_INDEX = os.path.join(VAULT, '20_Wiki', '.recall_raw')
 TRANSCRIPTS = os.environ.get('VAULT_LOCK_TRANSCRIPTS') or os.path.expanduser(
     '~/.claude/projects/' + VAULT.replace('/', '-').replace('_', '-'))
 IDLE_H = float(os.environ.get('VAULT_LOCK_IDLE_H', '3'))
@@ -274,6 +275,9 @@ def cmd_add(args):
                         f.writelines(l for l in lines if f'[[{name}' in l)
     if os.path.exists(FT_CACHE):
         os.remove(FT_CACHE)
+    if moved and os.path.isdir(RAW_INDEX):
+        # The raw-text index and model pairs hold snippets of moved summaries; a rebuild drops them
+        subprocess.run([sys.executable, os.path.join(VAULT, '99_Scripts', 'recall_ppr.py'), 'build'])
     for rel in moved:
         print(f'moved in: {rel}')
     if moved:
