@@ -8,7 +8,7 @@ Codex CLI is wired through `.codex/` (hooks, agents) and `.agents/skills/` (a sy
 
 ## Identity
 
-A personal knowledge system built from the user's AI conversations. **The goal is a digital twin**: it holds the user's views, experiences, and ways of thinking, so that an AI reading it thinks the way the user does. Publishing is optional. There are no embeddings and no vector database; the session reads files directly and judges.
+A personal knowledge system built from the user's AI conversations. **The goal is a digital twin**: it holds the user's views, experiences, and ways of thinking, so that an AI reading it thinks the way the user does. Publishing is optional. There is no vector database; the session reads files directly and judges.
 
 Three layers:
 1. **Experience record** (`20_Wiki/summaries/`): structured cards of past conversations. What the user thought, did, and went through. Immutable.
