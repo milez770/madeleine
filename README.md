@@ -31,7 +31,7 @@ The first line is a conversation not ingested yet; it shares the word "water" wi
 
 - **Association, not search.** Recall runs Personalized PageRank (spreading activation) over a graph of conversation cards, the people, places, and projects in them, and the links between cards. The approach follows [HippoRAG](https://arxiv.org/abs/2405.14831).
 - **Claude reads the files.** A card is YAML front matter; Claude opens it and follows its links. Every memory is a file you can read and edit.
-- **Three ways to recall.** `[keyword]` spreads activation over the graph. `[raw]` compares character pieces of what you actually said. `[model]` uses vectors trained on your own conversations: exchanges that follow each other and cards you linked by hand. Recall runs on the Python standard library. Training is optional and needs numpy and scipy; until you train, `[keyword]` takes the model's place.
+- **Three ways to recall.** `[keyword]` spreads activation over the graph. `[raw]` compares character pieces of what you actually said. `[model]` uses vectors trained on your own conversations: exchanges from the same conversation and cards you linked by hand. Recall runs on the Python standard library. Training is optional and needs numpy and scipy; until you train, `[keyword]` takes the model's place.
 - **It learns from what gets used.** When Claude reads a recalled card, the edges that led to it get stronger (Hebbian learning, 90-day half-life). Cards that were only shown get nothing.
 - **A separate mind layer.** Two kinds of files shape how Claude works with you: behavior rules it must follow, and `episodes.md`, moments when you decided something, quoted word for word. How you think is never written down as rules; Claude reads the events and judges.
 

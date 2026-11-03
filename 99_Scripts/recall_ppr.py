@@ -805,8 +805,10 @@ def cmd_build(args):
 
 
 def cmd_train(args):
-    """Learned model: pairs that follow each other in one conversation and pairs of
-    hand-linked cards (## Links) are pulled together, pairs of other conversations pushed apart.
+    """Learned model: pairs of one conversation and pairs of hand-linked cards (## Links) are
+    pulled together, pairs of other conversations pushed apart. A flow anchor is a user turn mixed
+    with the two pairs before it; its positives are the other pairs of that conversation except
+    those two. In-batch negatives from the card of a row's anchor or positive are left out.
 
     Each character piece gets a RAW_DIM vector, and a pair vector is the sum of its piece
     vectors. Training starts from an SVD of the raw-text matrix and refines it with
@@ -843,17 +845,21 @@ def cmd_train(args):
         return (sp.diags((1 / nr).astype(np.float32)) @ X).astype(np.float32).tocsr()
 
     X, XU = norm(Xraw), norm(csr(users))
-    anchors, positives = [], []
-    for ks in by_card.values():
-        if len(ks) < 2:
-            continue
+    cid = {c: i for i, c in enumerate(by_card)}
+    unit_card = np.array([cid[u[0]] for u in units])
+    anchors, positives, a_card = [], [], []
+    for card, ks in by_card.items():
         for j, k in enumerate(ks):
+            pos = ks[j + 1:] + ks[:max(0, j - 2)]   # not itself, not the two pairs mixed into the anchor
+            if not pos:
+                continue
             row = XU[k] * FLOW_W[0]
             for back in (1, 2):
                 if j - back >= 0:
                     row = row + X[ks[j - back]] * FLOW_W[back]
             anchors.append(row)
-            positives.append([o for o in ks if o != k])
+            positives.append(pos)
+            a_card.append(cid[card])
     A = sp.vstack(anchors).tocsr().astype(np.float32)
     links = [(a, b) for a, info in parse_summaries().items() if a in by_card
              for b in info['links'] if b in by_card and b != a]
@@ -866,17 +872,23 @@ def cmd_train(args):
         ia = [random.randrange(len(positives)) for _ in range(B // 2 if links else B)]
         Xa = [A[j] for j in ia]
         Xp = [random.choice(positives[j]) for j in ia]
+        ac = [a_card[j] for j in ia]
         for _ in range(B - len(Xa)):
             a, b = random.choice(links)
             Xa.append(X[random.choice(by_card[a])])
             Xp.append(random.choice(by_card[b]))
+            ac.append(cid[a])
         Xa = sp.vstack(Xa).tocsr()
+        ac, pc = np.array(ac), unit_card[Xp]
+        mask = (pc[None, :] == ac[:, None]) | (pc[None, :] == pc[:, None])
+        np.fill_diagonal(mask, False)
         Xp = X[Xp]
         Ea, Ep = np.asarray(Xa @ W), np.asarray(Xp @ W)
         na = np.linalg.norm(Ea, axis=1, keepdims=True) + 1e-9
         nb = np.linalg.norm(Ep, axis=1, keepdims=True) + 1e-9
         ea, ep = Ea / na, Ep / nb
         L = ea @ ep.T / tau
+        L[mask] = -np.inf
         L -= L.max(1, keepdims=True)
         P = np.exp(L)
         P /= P.sum(1, keepdims=True)
@@ -899,7 +911,7 @@ def cmd_train(args):
     with model_lock():
         for name in MODEL_FILES:
             os.replace(os.path.join(d, name + '.train'), os.path.join(d, name))
-    print(f'train: {len(units)} pairs · {len(anchors)} flow pairs · {len(links)} hand links · '
+    print(f'train: {len(units)} pairs · {len(anchors)} flow anchors · {len(links)} hand links · '
           f'{dim} dims · {time.time() - t0:.0f}s')
 
 
